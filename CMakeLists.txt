@@ -1,0 +1,59 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(
+  GAMES101
+  VERSION 0.1.0
+  DESCRIPTION "GAMES101 Homework"
+  LANGUAGES C CXX
+)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# ============================================================================
+# Project Options
+# ============================================================================
+
+option(ENABLE_CLANG_TIDY "Enable clang-tidy for project targets" OFF)
+
+# ============================================================================
+# CMake Modules
+# ============================================================================
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(GNUInstallDirs)
+
+include(ProjectWarnings)
+include(ProjectOptions)
+include(ClangTidy)
+include(ProjectTarget)
+
+# ============================================================================
+# Output Directories
+# ============================================================================
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+
+# ============================================================================
+# Third-Party Dependencies
+# ============================================================================
+
+find_package(OpenCV REQUIRED COMPONENTS core imgcodecs highgui)
+find_package(Eigen3 REQUIRED NO_MODULE)
+
+# ============================================================================
+# Asset Paths & Compile Definitions
+# ============================================================================
+
+file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/assets" ASSETS_DIR)
+add_compile_definitions(ASSETS_PATH="${ASSETS_DIR}/")
+
+# ============================================================================
+# Project Sources
+# ============================================================================
+
+add_subdirectory(src)
