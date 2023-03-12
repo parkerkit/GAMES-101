@@ -42,7 +42,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}"
 # Third-Party Dependencies
 # ============================================================================
 
-find_package(OpenCV REQUIRED COMPONENTS core imgcodecs highgui)
+find_package(OpenCV REQUIRED COMPONENTS core imgcodecs highgui imgproc)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
 # ============================================================================

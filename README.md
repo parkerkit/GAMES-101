@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | Assignment 0 | 环境准备 | [说明](docs/assignments/assignment0/README.md) · [作业要求](docs/assignments/assignment0/pa0.pdf) |
 | Assignment 1 | 旋转与投影 | [说明](docs/assignments/assignment1/README.md) · [作业要求](docs/assignments/assignment1/Assignment1.pdf) |
+| Assignment 2 | 三角形光栅化与深度测试 | [说明](docs/assignments/assignment2/README.md) · [作业要求](docs/assignments/assignment2/Assignment2.pdf) |
 
 ## 构建与运行
 
