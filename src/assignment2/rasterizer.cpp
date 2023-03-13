@@ -4,11 +4,12 @@
 
 #include "rasterizer.hpp"
 
+#include <Eigen/Core>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <limits>
-#include <stdexcept>
 #include <tuple>
 #include <vector>
 
@@ -35,11 +36,28 @@ rst::ColBufId rst::Rasterizer::LoadColors(const std::vector<Eigen::Vector3f>& co
 
 auto ToVec4(const Eigen::Vector3f& v3, float w = 1.0F) { return Eigen::Vector4f(v3.x(), v3.y(), v3.z(), w); }
 
-[[maybe_unused]] static bool InsideTriangle([[maybe_unused]] int x, [[maybe_unused]] int y,
-                                            [[maybe_unused]] const std::array<Eigen::Vector3f, 3>& vertices) {
-  // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by vertices[0],
-  // vertices[1], vertices[2]
-  throw std::logic_error("TODO: Implement InsideTriangle.");
+static bool InsideTriangle(float x, float y, const std::array<Eigen::Vector3f, 3>& vertices) {
+  // 使用 叉积法 判断点是否在三角形内
+  // 三个结果都非负，或者都非正：点在三角形内部或边界上。
+  // 结果有正有负：点在三角形外部。
+  Eigen::Vector2f p(x, y);
+
+  Eigen::Vector2f a = vertices[0].head<2>();
+  Eigen::Vector2f b = vertices[1].head<2>();
+  Eigen::Vector2f c = vertices[2].head<2>();
+
+  auto cross_2d = [](const Eigen::Vector2f& u, const Eigen::Vector2f& v) { return u.x() * v.y() - u.y() * v.x(); };
+
+  float c1 = cross_2d(b - a, p - a);
+  float c2 = cross_2d(c - b, p - b);
+  float c3 = cross_2d(a - c, p - c);
+
+  constexpr float eps = 1e-6F;
+
+  bool has_negative = c1 < -eps || c2 < -eps || c3 < -eps;
+  bool has_positive = c1 > eps || c2 > eps || c3 > eps;
+
+  return !(has_negative && has_positive);
 }
 
 [[maybe_unused]] static std::tuple<float, float, float> ComputeBarycentric2D(float x, float y,
@@ -84,8 +102,6 @@ void rst::Rasterizer::Draw(PosBufId pos_buffer, IndBufId ind_buffer, ColBufId co
 
     for (int i = 0; i < 3; ++i) {
       t.SetVertex(i, v[i].head<3>());
-      t.SetVertex(i, v[i].head<3>());
-      t.SetVertex(i, v[i].head<3>());
     }
 
     auto col_x = col[triangle_indices[0]];
@@ -102,19 +118,59 @@ void rst::Rasterizer::Draw(PosBufId pos_buffer, IndBufId ind_buffer, ColBufId co
 
 // Screen space rasterization
 void rst::Rasterizer::RasterizeTriangle(const Triangle& t) {
-  [[maybe_unused]] auto v = t.ToVector4();
+  // xy 是屏幕坐标，z 是投影后的深度值，左下角是原点 (0, 0)。
+  if (m_width <= 0 || m_height <= 0) {
+    return;
+  }
 
-  // TODO : Find out the bounding box of current triangle.
-  // iterate through the pixel and find if the current pixel is inside the triangle
+  Eigen::Vector2f bbox_min = t.v[0].head<2>();
+  Eigen::Vector2f bbox_max = bbox_min;
+  for (const auto& vert : t.v) {
+    if (!vert.allFinite()) {
+      return;
+    }
+    bbox_min = bbox_min.cwiseMin(vert.head<2>());
+    bbox_max = bbox_max.cwiseMax(vert.head<2>());
+  }
 
-  // If so, use the following code to get the interpolated z value.
-  // auto[alpha, beta, gamma] = ComputeBarycentric2D(x, y, t.v);
-  // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-  // float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-  // z_interpolated *= w_reciprocal;
+  // 跳过退化三角形
+  const Eigen::Vector2f ab = t.v[1].head<2>() - t.v[0].head<2>();
+  const Eigen::Vector2f ac = t.v[2].head<2>() - t.v[0].head<2>();
+  const float signed_area = ab.x() * ac.y() - ab.y() * ac.x();
+  constexpr float area_epsilon = 1e-6F;
+  if (!std::isfinite(signed_area) || std::abs(signed_area) <= area_epsilon) {
+    return;
+  }
 
-  // TODO : set the current pixel (use the SetPixel function) to the color of the triangle (use GetColor function) if it
-  // should be painted.
+  // 先在浮点范围内限制包围盒，避免画面外坐标转换为整数时溢出。
+  const double min_x = std::max(0.0, std::floor(static_cast<double>(bbox_min.x())));
+  const double min_y = std::max(0.0, std::floor(static_cast<double>(bbox_min.y())));
+  const double max_x = std::min(static_cast<double>(m_width - 1), std::ceil(static_cast<double>(bbox_max.x())));
+  const double max_y = std::min(static_cast<double>(m_height - 1), std::ceil(static_cast<double>(bbox_max.y())));
+  if (min_x > max_x || min_y > max_y) {
+    return;
+  }
+
+  for (int x = static_cast<int>(min_x); x <= static_cast<int>(max_x); ++x) {
+    for (int y = static_cast<int>(min_y); y <= static_cast<int>(max_y); ++y) {
+      const float sample_x = static_cast<float>(x) + 0.5F;
+      const float sample_y = static_cast<float>(y) + 0.5F;
+      if (!InsideTriangle(sample_x, sample_y, t.v)) {
+        continue;
+      }
+
+      const auto [alpha, beta, gamma] = ComputeBarycentric2D(sample_x, sample_y, t.v);
+      // 投影并除以 w 后的深度，在屏幕空间直接做线性插值。
+      const float depth = alpha * t.v[0].z() + beta * t.v[1].z() + gamma * t.v[2].z();
+      const auto index = static_cast<std::size_t>(GetIndex(x, y));
+      // 保留当前投影约定：近处深度较大，深度缓冲以负无穷初始化。
+      if (!std::isfinite(depth) || depth <= m_depth_buf[index]) {
+        continue;
+      }
+      m_depth_buf[index] = depth;
+      SetPixel(Eigen::Vector3f{sample_x, sample_y, depth}, t.GetColor());
+    }
+  }
 }
 
 void rst::Rasterizer::SetModel(const Eigen::Matrix4f& m) { m_model = m; }
@@ -128,13 +184,13 @@ void rst::Rasterizer::Clear(rst::Buffers buff) {
     std::fill(m_frame_buf.begin(), m_frame_buf.end(), Eigen::Vector3f{0, 0, 0});
   }
   if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth) {
-    std::fill(m_depth_buf.begin(), m_depth_buf.end(), std::numeric_limits<float>::infinity());
+    std::fill(m_depth_buf.begin(), m_depth_buf.end(), -std::numeric_limits<float>::infinity());
   }
 }
 
 rst::Rasterizer::Rasterizer(int w, int h) : m_width(w), m_height(h) {
   m_frame_buf.resize(w * h);
-  m_depth_buf.resize(w * h);
+  m_depth_buf.resize(w * h, -std::numeric_limits<float>::infinity());
 }
 
 int rst::Rasterizer::GetIndex(int x, int y) { return (m_height - 1 - y) * m_width + x; }

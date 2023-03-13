@@ -10,6 +10,12 @@
 | Assignment 1 | 旋转与投影 | [说明](docs/assignments/assignment1/README.md) · [作业要求](docs/assignments/assignment1/Assignment1.pdf) |
 | Assignment 2 | 三角形光栅化与深度测试 | [说明](docs/assignments/assignment2/README.md) · [作业要求](docs/assignments/assignment2/Assignment2.pdf) |
 
+## 效果展示
+
+### Assignment 2：三角形光栅化与深度测试
+
+![Assignment 2 渲染结果](docs/assignments/assignment2/assignment2_output.png)
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。

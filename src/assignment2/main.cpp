@@ -1,7 +1,8 @@
 #include <Eigen/Core>
+#include <cmath>
 #include <iostream>
+#include <numbers>
 #include <opencv2/opencv.hpp>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -24,10 +25,44 @@ Eigen::Matrix4f GetModelMatrix([[maybe_unused]] float rotation_angle) {
   return model;
 }
 
-Eigen::Matrix4f GetProjectionMatrix([[maybe_unused]] float eye_fov, [[maybe_unused]] float aspect_ratio,
-                                    [[maybe_unused]] float z_near, [[maybe_unused]] float z_far) {
-  // TODO: Copy-paste your implementation from the previous assignment.
-  throw std::logic_error("TODO: Implement GetProjectionMatrix using Assignment 1.F");
+Eigen::Matrix4f GetProjectionMatrix(float eye_fov, float aspect_ratio, float z_near, float z_far) {
+  // 相机朝向 -Z；z_near、z_far 是正距离，近平面和远平面的相机空间坐标均为负。
+  const float near_z = -z_near;
+  const float far_z = -z_far;
+
+  // 将视锥体压缩为长方体；取 w = -z，使相机前方顶点的齐次 w 为正。
+  Eigen::Matrix4f perspective_transform{};
+  // clang-format off
+  perspective_transform << -near_z, 0,       0,                 0,
+                           0,       -near_z, 0,                 0,
+                           0,       0,       -(near_z + far_z), near_z * far_z,
+                           0,       0,       -1,                0;
+  // clang-format on
+
+  const float half_eye_radian = eye_fov * std::numbers::pi_v<float> / 360.0F;
+  const float top = z_near * std::tan(half_eye_radian);
+  const float bottom = -top;
+  const float right = top * aspect_ratio;
+  const float left = -right;
+
+  // 将长方体平移到原点，再缩放至 NDC 的 [-1, 1] 范围。
+  Eigen::Matrix4f ndc_scale{};
+  Eigen::Matrix4f frustum_center_translation{};
+  // clang-format off
+  ndc_scale << 2 / (right - left), 0,                  0,                    0,
+               0,                  2 / (top - bottom), 0,                    0,
+               0,                  0,                  2 / (near_z - far_z), 0,
+               0,                  0,                  0,                    1;
+
+  frustum_center_translation << 1, 0, 0, -(right + left) / 2,
+                                0, 1, 0, -(top + bottom) / 2,
+                                0, 0, 1, -(near_z + far_z) / 2,
+                                0, 0, 0, 1;
+  // clang-format on
+
+  // 透视除法后：近平面 NDC z = +1，远平面 NDC z = -1。
+  // 与光栅化阶段保持一致：深度越大越靠近相机。
+  return ndc_scale * frustum_center_translation * perspective_transform;
 }
 
 int main(int argc, const char** argv) {
