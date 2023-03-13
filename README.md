@@ -9,6 +9,7 @@
 | Assignment 0 | 环境准备 | [说明](docs/assignments/assignment0/README.md) · [作业要求](docs/assignments/assignment0/pa0.pdf) |
 | Assignment 1 | 旋转与投影 | [说明](docs/assignments/assignment1/README.md) · [作业要求](docs/assignments/assignment1/Assignment1.pdf) |
 | Assignment 2 | 三角形光栅化与深度测试 | [说明](docs/assignments/assignment2/README.md) · [作业要求](docs/assignments/assignment2/Assignment2.pdf) |
+| Assignment 3 | 着色与纹理映射 | [说明](docs/assignments/assignment3/README.md) · [作业要求](docs/assignments/assignment3/Assignment3.pdf) |
 
 ## 效果展示
 
@@ -28,6 +29,7 @@
 src/                             各作业源码及独立 CMake target
 cmake/                           公共构建选项
 assets/                          模型、纹理及来源记录
+third_party/                     第三方 OBJ 加载器及来源记录
 docs/BUILD.md                    Windows 构建与运行说明
 docs/assignments/                各作业说明与材料
 hooks/                           本地开发检查脚本
@@ -35,6 +37,6 @@ hooks/                           本地开发检查脚本
 
 ## 来源与许可
 
-课程及作业材料来自 [GAMES101](https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html)，模型与纹理来源见 [资源说明](assets/README.md)。
+课程及作业材料来自 [GAMES101](https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html)，模型与纹理来源见 [资源说明](assets/README.md)，OBJ 加载器来源见 [说明](third_party/obj_loader/README.md)。
 
 本仓库原创代码使用 [MIT License](LICENSE)。课程材料、课程框架及第三方资源保留各自的许可与署名，不适用本仓库原创代码的许可声明。
