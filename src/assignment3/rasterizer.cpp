@@ -224,23 +224,83 @@ void rst::Rasterizer::Draw(std::vector<Triangle*>& triangle_list) {
 }
 
 // Screen space rasterization
-void rst::Rasterizer::RasterizeTriangle([[maybe_unused]] const Triangle& t,
-                                        [[maybe_unused]] const std::array<Eigen::Vector3f, 3>& view_pos) {
-  // TODO: Adapt the triangle rasterization code from Assignment 2.
-  // t.v contains screen-space x/y and mapped post-divide z; w retains the clip-space w.
-  // Interpolate this z directly for the depth test. Match the comparison to your projection convention.
-  // Use reciprocal clip-space w for perspective-correct interpolation of the attributes below.
+void rst::Rasterizer::RasterizeTriangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& view_pos) {
+  // xy 是屏幕坐标，z 是投影后的深度值，左下角是原点 (0, 0)。
+  if (m_width <= 0 || m_height <= 0) {
+    return;
+  }
 
-  // TODO: Interpolate the attributes:
-  // auto interpolated_color
-  // auto interpolated_normal
-  // auto interpolated_texcoords
-  // auto interpolated_shadingcoords
+  Eigen::Vector2f bbox_min = t.v[0].head<2>();
+  Eigen::Vector2f bbox_max = bbox_min;
+  for (const auto& vert : t.v) {
+    if (!vert.allFinite() || vert.w() <= 0.0F) {
+      return;
+    }
+    bbox_min = bbox_min.cwiseMin(vert.head<2>());
+    bbox_max = bbox_max.cwiseMax(vert.head<2>());
+  }
 
-  // Use: FragmentShaderPayload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords,
-  // m_texture ? &*m_texture : nullptr); Use: payload.view_pos = interpolated_shadingcoords; Use: Instead of passing the
-  // triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color; Use:
-  // auto pixel_color = m_fragment_shader(payload);
+  // 跳过退化三角形
+  const Eigen::Vector2f ab = t.v[1].head<2>() - t.v[0].head<2>();
+  const Eigen::Vector2f ac = t.v[2].head<2>() - t.v[0].head<2>();
+  const float signed_area = ab.x() * ac.y() - ab.y() * ac.x();
+  constexpr float area_epsilon = 1e-6F;
+  if (!std::isfinite(signed_area) || std::abs(signed_area) <= area_epsilon) {
+    return;
+  }
+
+  // 先在浮点范围内限制包围盒，避免画面外坐标转换为整数时溢出。
+  const double min_x = std::max(0.0, std::floor(static_cast<double>(bbox_min.x())));
+  const double min_y = std::max(0.0, std::floor(static_cast<double>(bbox_min.y())));
+  const double max_x = std::min(static_cast<double>(m_width - 1), std::ceil(static_cast<double>(bbox_max.x())));
+  const double max_y = std::min(static_cast<double>(m_height - 1), std::ceil(static_cast<double>(bbox_max.y())));
+  if (min_x > max_x || min_y > max_y) {
+    return;
+  }
+
+  for (int x = static_cast<int>(min_x); x <= static_cast<int>(max_x); ++x) {
+    for (int y = static_cast<int>(min_y); y <= static_cast<int>(max_y); ++y) {
+      const float sample_x = static_cast<float>(x) + 0.5F;
+      const float sample_y = static_cast<float>(y) + 0.5F;
+      if (!InsideTriangle(sample_x, sample_y, t.v)) {
+        continue;
+      }
+
+      const auto [alpha, beta, gamma] = ComputeBarycentric2D(sample_x, sample_y, t.v);
+      // 投影并除以 w 后的深度，在屏幕空间直接做线性插值。
+      const float depth = alpha * t.v[0].z() + beta * t.v[1].z() + gamma * t.v[2].z();
+      const auto index = static_cast<std::size_t>(GetIndex(x, y));
+      // 保留当前投影约定：近处深度较大，深度缓冲以负无穷初始化。
+      if (!std::isfinite(depth) || depth <= m_depth_buf[index]) {
+        continue;
+      }
+      // 屏幕重心坐标先除以各顶点的原始 clip w，再归一化，校正透视投影下的属性插值。
+      // 深度已经经过透视除法，仍使用上面的线性插值，不重复校正。
+      const float weighted_alpha = alpha / t.v[0].w();
+      const float weighted_beta = beta / t.v[1].w();
+      const float weighted_gamma = gamma / t.v[2].w();
+      const float weight_sum = weighted_alpha + weighted_beta + weighted_gamma;
+      if (!std::isfinite(weight_sum) || weight_sum <= 0.0F) {
+        continue;
+      }
+
+      FragmentShaderPayload payload;
+      payload.color =
+        Interpolate(weighted_alpha, weighted_beta, weighted_gamma, t.color[0], t.color[1], t.color[2], weight_sum);
+      payload.normal =
+        Interpolate(weighted_alpha, weighted_beta, weighted_gamma, t.normal[0], t.normal[1], t.normal[2], weight_sum)
+          .normalized();
+      payload.tex_coords = Interpolate(weighted_alpha, weighted_beta, weighted_gamma, t.tex_coords[0], t.tex_coords[1],
+                                       t.tex_coords[2], weight_sum);
+      payload.view_pos =
+        Interpolate(weighted_alpha, weighted_beta, weighted_gamma, view_pos[0], view_pos[1], view_pos[2], weight_sum);
+      payload.texture = m_texture ? &*m_texture : nullptr;
+
+      const Eigen::Vector3f color = m_fragment_shader(payload);
+      m_depth_buf[index] = depth;
+      SetPixel(Eigen::Vector2i{x, y}, color);
+    }
+  }
 }
 
 void rst::Rasterizer::SetModel(const Eigen::Matrix4f& m) { m_model = m; }
@@ -254,7 +314,7 @@ void rst::Rasterizer::Clear(rst::Buffers buff) {
     std::fill(m_frame_buf.begin(), m_frame_buf.end(), Eigen::Vector3f{0, 0, 0});
   }
   if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth) {
-    std::fill(m_depth_buf.begin(), m_depth_buf.end(), std::numeric_limits<float>::infinity());
+    std::fill(m_depth_buf.begin(), m_depth_buf.end(), -std::numeric_limits<float>::infinity());
   }
 }
 
@@ -264,7 +324,7 @@ rst::Rasterizer::Rasterizer(int w, int h) : m_width(w), m_height(h) {
   }
   const auto count = static_cast<std::size_t>(w) * static_cast<std::size_t>(h);
   m_frame_buf.resize(count, Eigen::Vector3f::Zero());
-  m_depth_buf.resize(count, std::numeric_limits<float>::infinity());
+  m_depth_buf.resize(count, -std::numeric_limits<float>::infinity());
 
   m_texture = std::nullopt;
 }

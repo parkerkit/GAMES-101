@@ -17,6 +17,14 @@
 
 ![Assignment 2 渲染结果](docs/assignments/assignment2/assignment2_output.png)
 
+### Assignment 3：着色与纹理映射
+
+| Blinn–Phong 光照 | 纹理着色 |
+| :---: | :---: |
+| ![Assignment 3：Blinn–Phong 光照](docs/assignments/assignment3/assignment3_phong.png) | ![Assignment 3：纹理着色](docs/assignments/assignment3/assignment3_texture.png) |
+
+法线可视化、凹凸映射与位移着色结果见 [Assignment 3 完整对比](docs/assignments/assignment3/README.md#效果展示)。
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。
