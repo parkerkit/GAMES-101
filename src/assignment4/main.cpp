@@ -40,14 +40,48 @@ void NaiveBezier(const std::vector<cv::Point2f>& points, cv::Mat& window) {
   }
 }
 
-cv::Point2f RecursiveBezier([[maybe_unused]] const std::vector<cv::Point2f>& control_points, [[maybe_unused]] float t) {
-  // TODO: 实现 de Casteljau 算法，递归插值控制点，返回参数 t 对应的曲线点。
-  throw std::logic_error("TODO: implement RecursiveBezier");
+cv::Point2f Lerp(const cv::Point2f& a, const cv::Point2f& b, float t) {
+  return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t};
 }
 
-void Bezier([[maybe_unused]] const std::vector<cv::Point2f>& control_points, [[maybe_unused]] cv::Mat& window) {
-  // TODO: 遍历 t = 0 到 t = 1，调用 RecursiveBezier，并将曲线绘制到 window。
-  throw std::logic_error("TODO: implement Bezier");
+cv::Point2f RecursiveBezier(const std::vector<cv::Point2f>& control_points, float t) {
+  if (control_points.empty()) {
+    throw std::invalid_argument("Control points cannot be empty");
+  }
+
+  if (control_points.size() == 1) {
+    return control_points[0];
+  }
+
+  std::vector<cv::Point2f> next_control_points;
+  next_control_points.reserve(control_points.size() - 1);
+
+  for (std::size_t i = 0; i < control_points.size() - 1; ++i) {
+    const cv::Point2f& p0 = control_points[i];
+    const cv::Point2f& p1 = control_points[i + 1];
+
+    const cv::Point2f interpolated_point = Lerp(p0, p1, t);
+    next_control_points.push_back(interpolated_point);
+  }
+  return RecursiveBezier(next_control_points, t);
+}
+
+void Bezier(const std::vector<cv::Point2f>& control_points, cv::Mat& window) {
+  if (control_points.size() != 4) {
+    throw std::invalid_argument("Cubic Bezier curve requires four control points");
+  }
+
+  constexpr int steps = 1000;
+  for (int step = 0; step <= steps; ++step) {
+    const float t = static_cast<float>(step) / static_cast<float>(steps);
+    const cv::Point2f point = RecursiveBezier(control_points, t);
+    const int x = static_cast<int>(std::lround(point.x));
+    const int y = static_cast<int>(std::lround(point.y));
+    if (x >= 0 && x < window.cols && y >= 0 && y < window.rows) {
+      // OpenCV 使用 BGR 顺序，通道 1 对应绿色。
+      window.at<cv::Vec3b>(y, x)[1] = 255;
+    }
+  }
 }
 
 int main() {
@@ -65,8 +99,7 @@ int main() {
 
       if (control_points.size() == 4) {
         NaiveBezier(control_points, window);
-        // 完成 TODO 后启用，与直接公式绘制的曲线进行比较。
-        // Bezier(control_points, window);
+        Bezier(control_points, window);
         cv::imshow("Bezier Curve", window);
         if (!cv::imwrite("my_bezier_curve.png", window)) {
           throw std::runtime_error("Failed to save image: my_bezier_curve.png");

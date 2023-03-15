@@ -26,6 +26,12 @@
 
 法线可视化、凹凸映射与位移着色结果见 [Assignment 3 完整对比](docs/assignments/assignment3/README.md#效果展示)。
 
+### Assignment 4：Bézier 曲线
+
+![Assignment 4：直接公式与 de Casteljau 算法的曲线重叠对比](docs/assignments/assignment4/my_bezier_curve.png)
+
+直接公式绘制红色曲线，de Casteljau 递归算法绘制绿色曲线，重叠处呈黄色，用于直观对比两种方法的结果。详见 [曲线重叠验证](docs/assignments/assignment4/README.md#曲线重叠验证)。
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。
