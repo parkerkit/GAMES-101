@@ -10,6 +10,7 @@
 | Assignment 1 | 旋转与投影 | [说明](docs/assignments/assignment1/README.md) · [作业要求](docs/assignments/assignment1/Assignment1.pdf) |
 | Assignment 2 | 三角形光栅化与深度测试 | [说明](docs/assignments/assignment2/README.md) · [作业要求](docs/assignments/assignment2/Assignment2.pdf) |
 | Assignment 3 | 着色与纹理映射 | [说明](docs/assignments/assignment3/README.md) · [作业要求](docs/assignments/assignment3/Assignment3.pdf) |
+| Assignment 4 | Bézier 曲线 | [说明](docs/assignments/assignment4/README.md) · [作业要求](docs/assignments/assignment4/assignment4.pdf) |
 
 ## 效果展示
 
