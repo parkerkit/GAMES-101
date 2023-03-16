@@ -67,7 +67,7 @@ build\msvc-release-local\bin\assignment0.exe
 
 Debug 构建将命令和程序路径中的 `msvc-release-local` 替换为 `msvc-debug-local`。不指定 `--target assignment0` 时构建所有已接入的作业。
 
-以上以 `assignment0` 检查 OpenCV/Eigen 环境。构建其他作业时，将目标名替换为 `assignment1`、`assignment2` 或 `assignment3`，运行参数见各作业说明。
+以上以 `assignment0` 检查 OpenCV/Eigen 环境。构建和运行其他作业时，将命令中的目标名和可执行文件名替换为对应的 `assignmentN`（`N` 为作业编号）。已接入的作业及其运行说明见[根目录 README](../README.md#作业进度)。
 
 ## 4. DLL 与常见问题
 
