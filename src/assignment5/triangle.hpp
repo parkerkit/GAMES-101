@@ -1,21 +1,66 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
 #include "object.hpp"
+#include "vector.hpp"
 
-inline bool RayTriangleIntersect([[maybe_unused]] const Vector3f& v0, [[maybe_unused]] const Vector3f& v1,
-                                 [[maybe_unused]] const Vector3f& v2, [[maybe_unused]] const Vector3f& orig,
-                                 [[maybe_unused]] const Vector3f& dir, [[maybe_unused]] float& tnear,
-                                 [[maybe_unused]] float& u, [[maybe_unused]] float& v) {
-  // TODO: Implement this function that tests whether the triangle
-  // that's specified by v0, v1 and v2 intersects with the ray (whose
-  // origin is *orig* and direction is *dir*)
-  // Also don't forget to update tnear, u and v.
-  return false;
+/// @brief 使用莫勒–特朗博雷(Möller–Trumbore)算法计算射线与三角形的交点
+inline bool RayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2, const Vector3f& orig,
+                                 const Vector3f& dir, float& tnear, float& u, float& v) {
+  constexpr float k_epsilon = 1e-8F;
+
+  // 计算三角形的两条边
+  Vector3f edge1 = v1 - v0;
+  Vector3f edge2 = v2 - v0;
+
+  // 计算叉积
+  Vector3f pvec = CrossProduct(dir, edge2);
+
+  // 计算行列式
+  float det = DotProduct(edge1, pvec);
+
+  // 射线与三角形所在平面平行，或三角形退化
+  if (std::fabs(det) < k_epsilon) {
+    return false;
+  }
+
+  float inv_det = 1.0F / det;
+
+  // 计算 u
+  Vector3f tvec = orig - v0;
+  float uu = DotProduct(tvec, pvec) * inv_det;
+
+  if (uu < 0.0F || uu > 1.0F) {
+    return false;
+  }
+
+  // 计算 v
+  Vector3f qvec = CrossProduct(tvec, edge1);
+  float vv = DotProduct(dir, qvec) * inv_det;
+
+  if (vv < 0.0F || uu + vv > 1.0F) {
+    return false;
+  }
+
+  // 计算射线参数 t
+  float t = DotProduct(edge2, qvec) * inv_det;
+
+  // 只接受射线正方向上的交点
+  if (t < k_epsilon) {
+    return false;
+  }
+
+  // 更新输出参数
+  tnear = t;
+  u = uu;
+  v = vv;
+
+  return true;
 }
 
 class MeshTriangle : public Object {

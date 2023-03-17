@@ -33,6 +33,12 @@
 
 直接公式绘制红色曲线，de Casteljau 递归算法绘制绿色曲线，重叠处呈黄色，用于直观对比两种方法的结果。详见 [曲线重叠验证](docs/assignments/assignment4/README.md#曲线重叠验证)。
 
+### Assignment 5：光线追踪
+
+![Assignment 5：球体与棋盘地面的光线追踪结果](docs/assignments/assignment5/assignment5.png)
+
+使用 Whitted 风格光线追踪渲染球体与三角形网格，包含阴影、反射与折射。实现说明见 [Assignment 5](docs/assignments/assignment5/README.md)。
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。

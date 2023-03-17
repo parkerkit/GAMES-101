@@ -205,24 +205,24 @@ void Renderer::Render(const Scene& scene) {
   std::vector<Vector3f> framebuffer(static_cast<std::size_t>(scene.GetWidth()) *
                                     static_cast<std::size_t>(scene.GetHeight()));
 
-  [[maybe_unused]] float scale = std::tan(DegToRad(scene.GetFov() * 0.5F));
-  [[maybe_unused]] float image_aspect_ratio =
-    static_cast<float>(scene.GetWidth()) / static_cast<float>(scene.GetHeight());
+  float scale = std::tan(DegToRad(scene.GetFov() * 0.5F));
+  float image_aspect_ratio = static_cast<float>(scene.GetWidth()) / static_cast<float>(scene.GetHeight());
+
+  float width = static_cast<float>(scene.GetWidth());
+  float height = static_cast<float>(scene.GetHeight());
 
   // Use this variable as the eye position to start your rays.
   Vector3f eye_pos(0);
   std::size_t pixel_index = 0;
   for (int j = 0; j < scene.GetHeight(); ++j) {
     for (int i = 0; i < scene.GetWidth(); ++i) {
-      // generate primary ray direction
-      float x = 0.0F;
-      float y = 0.0F;
-      // TODO: Find the x and y positions of the current pixel to get the direction
-      // vector that passes through it.
-      // Also, don't forget to multiply both of them with the variable *scale*, and
-      // x (horizontal) variable with the *image_aspect_ratio*
+      // +0.5F 是为了取像素中心，而不是像素的边缘
+      float x = (2.0F * (static_cast<float>(i) + 0.5F) / width - 1.0F) * image_aspect_ratio * scale;
+      float y = (1.0F - 2.0F * (static_cast<float>(j) + 0.5F) / height) * scale;
 
-      Vector3f dir = Vector3f(x, y, -1);  // Don't forget to Normalize this direction!
+      Vector3f dir = Vector3f(x, y, -1.0F);
+      dir = Normalize(dir);
+
       framebuffer[pixel_index++] = CastRay(eye_pos, dir, scene, 0);
     }
     UpdateProgress(static_cast<float>(j) / static_cast<float>(scene.GetHeight()));
