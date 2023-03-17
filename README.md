@@ -12,6 +12,7 @@
 | Assignment 3 | 着色与纹理映射 | [说明](docs/assignments/assignment3/README.md) · [作业要求](docs/assignments/assignment3/Assignment3.pdf) |
 | Assignment 4 | Bézier 曲线 | [说明](docs/assignments/assignment4/README.md) · [作业要求](docs/assignments/assignment4/assignment4.pdf) |
 | Assignment 5 | 光线追踪 | [说明](docs/assignments/assignment5/README.md) · [作业要求](docs/assignments/assignment5/assignment5.pdf) |
+| Assignment 6 | BVH 加速光线追踪 | [说明](docs/assignments/assignment6/README.md) · [作业要求](docs/assignments/assignment6/PA6.pdf) |
 
 ## 效果展示
 
