@@ -76,7 +76,8 @@ public:
 
 class MeshTriangle : public Object {
 public:
-  explicit MeshTriangle(const std::string& filename) {
+  explicit MeshTriangle(const std::string& filename,
+                        BVHAccel::SplitMethod split_method = BVHAccel::SplitMethod::Naive) {
     objl::Loader loader;
     if (!loader.LoadFile(filename) || loader.LoadedMeshes.size() != 1) {
       throw std::runtime_error("Failed to load a single-mesh OBJ: " + filename);
@@ -103,7 +104,7 @@ public:
     for (auto& triangle : m_triangles) {
       primitives.push_back(&triangle);
     }
-    m_bvh = std::make_unique<BVHAccel>(std::move(primitives));
+    m_bvh = std::make_unique<BVHAccel>(std::move(primitives), 1, split_method);
   }
   MeshTriangle(const MeshTriangle&) = delete;
   MeshTriangle& operator=(const MeshTriangle&) = delete;

@@ -32,7 +32,7 @@ public:
 private:
   std::unique_ptr<BVHBuildNode> RecursiveBuild(std::vector<Object*> objects);
   [[maybe_unused]] const int m_max_prims_in_node;
-  [[maybe_unused]] const SplitMethod m_split_method;
+  const SplitMethod m_split_method;
   std::vector<Object*> m_primitives;
   std::unique_ptr<BVHBuildNode> m_root;
 };

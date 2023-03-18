@@ -29,7 +29,7 @@ public:
   const std::vector<Object*>& GetObjects() const { return m_objects; }
   const std::vector<std::unique_ptr<Light>>& GetLights() const { return m_lights; }
   Intersection Intersect(const Ray& ray) const;
-  void BuildBVH();
+  void BuildBVH(BVHAccel::SplitMethod split_method = BVHAccel::SplitMethod::Naive);
   Vector3f CastRay(const Ray& ray, int depth) const;
   bool Trace(const Ray& ray, const std::vector<Object*>& objects, float& t_near, uint32_t& index, Object** hit_object);
 

@@ -3,9 +3,74 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <limits>
 #include <utility>
+
+namespace {
+
+// Sweep SAH：在三个轴上按质心排序，评估每个能将图元分成非空两组的候选切分。
+// 返回左侧图元数量；0 表示无法找到有效 SAH 划分，由调用方回退到中点划分。
+std::size_t PartitionSah(std::vector<Object*>& objects, int& split_axis) {
+  Bounds3 parent_bounds;
+  for (auto* object : objects) {
+    parent_bounds = Union(parent_bounds, object->GetBounds());
+  }
+  const double parent_area = parent_bounds.SurfaceArea();
+  if (!std::isfinite(parent_area) || parent_area <= 0.0) {
+    return 0;
+  }
+
+  const std::size_t count = objects.size();
+  double best_cost = std::numeric_limits<double>::infinity();
+  int best_axis = 0;
+  std::size_t best_split = 0;
+  std::size_t best_balance = 0;
+  std::vector<Bounds3> suffix_bounds(count);
+  for (int axis = 0; axis < 3; ++axis) {
+    std::sort(objects.begin(), objects.end(), [axis](Object* a, Object* b) {
+      return a->GetBounds().Centroid()[axis] < b->GetBounds().Centroid()[axis];
+    });
+
+    // 后缀包围盒保存 [i, count) 的范围，前缀包围盒在下一次扫描中逐步累积。
+    // 每个轴排序后只需线性扫描，避免为每个候选切分重新遍历全部图元。
+    suffix_bounds.back() = objects.back()->GetBounds();
+    for (std::size_t i = count - 1; i > 0; --i) {
+      suffix_bounds[i - 1] = Union(objects[i - 1]->GetBounds(), suffix_bounds[i]);
+    }
+    Bounds3 left_bounds;
+    for (std::size_t i = 1; i < count; ++i) {
+      left_bounds = Union(left_bounds, objects[i - 1]->GetBounds());
+      // 质心相同时不存在将这两个图元分开的轴向切分位置。
+      if (objects[i - 1]->GetBounds().Centroid()[axis] == objects[i]->GetBounds().Centroid()[axis]) {
+        continue;
+      }
+      // SAH = Ct + Ci * (A_left * N_left + A_right * N_right) / A_parent。
+      // 比较同一父节点的切分时，Ct、Ci 和 A_parent 都相同，可省略这些常量。
+      const double cost = left_bounds.SurfaceArea() * static_cast<double>(i) +
+                          suffix_bounds[i].SurfaceArea() * static_cast<double>(count - i);
+      const std::size_t balance = std::min(i, count - i);
+      // 成本相同时优先更均衡的划分，避免无收益的单侧长链。
+      if (std::isfinite(cost) && (cost < best_cost || (cost == best_cost && balance > best_balance))) {
+        best_cost = cost;
+        best_axis = axis;
+        best_split = i;
+        best_balance = balance;
+      }
+    }
+  }
+  if (best_split != 0) {
+    split_axis = best_axis;
+    std::sort(objects.begin(), objects.end(), [best_axis](Object* a, Object* b) {
+      return a->GetBounds().Centroid()[best_axis] < b->GetBounds().Centroid()[best_axis];
+    });
+  }
+  return best_split;
+}
+
+}  // namespace
 
 BVHAccel::BVHAccel(std::vector<Object*> primitives, int max_prims_in_node, SplitMethod split_method)
     : m_max_prims_in_node(std::min(255, max_prims_in_node)),
@@ -17,7 +82,8 @@ BVHAccel::BVHAccel(std::vector<Object*> primitives, int max_prims_in_node, Split
   }
   m_root = RecursiveBuild(m_primitives);
   const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
-  std::cout << "BVH generation complete: " << elapsed.count() << " ms\n";
+  const char* method_name = m_split_method == SplitMethod::Sah ? "SAH" : "Naive";
+  std::cout << "BVH generation complete (" << method_name << "): " << elapsed.count() << " ms\n";
 }
 
 std::unique_ptr<BVHBuildNode> BVHAccel::RecursiveBuild(std::vector<Object*> objects) {
@@ -44,23 +110,18 @@ std::unique_ptr<BVHBuildNode> BVHAccel::RecursiveBuild(std::vector<Object*> obje
       centroid_bounds = Union(centroid_bounds, object->GetBounds().Centroid());
     }
     int dim = centroid_bounds.MaxExtent();
-    switch (dim) {
-      case 0:
-        std::sort(objects.begin(), objects.end(),
-                  [](auto f1, auto f2) { return f1->GetBounds().Centroid().x < f2->GetBounds().Centroid().x; });
-        break;
-      case 1:
-        std::sort(objects.begin(), objects.end(),
-                  [](auto f1, auto f2) { return f1->GetBounds().Centroid().y < f2->GetBounds().Centroid().y; });
-        break;
-      case 2:
-        std::sort(objects.begin(), objects.end(),
-                  [](auto f1, auto f2) { return f1->GetBounds().Centroid().z < f2->GetBounds().Centroid().z; });
-        break;
+    std::size_t split_index = m_split_method == SplitMethod::Sah ? PartitionSah(objects, dim) : 0;
+    if (split_index == 0) {
+      // Naive 模式，或 SAH 遇到质心重合、退化包围盒时，使用最长质心轴的中点划分。
+      std::sort(objects.begin(), objects.end(), [dim](Object* a, Object* b) {
+        return a->GetBounds().Centroid()[dim] < b->GetBounds().Centroid()[dim];
+      });
+      split_index = objects.size() / 2;
     }
+    node->split_axis = dim;
 
     auto beginning = objects.begin();
-    auto middling = objects.begin() + static_cast<std::ptrdiff_t>(objects.size() / 2);
+    auto middling = objects.begin() + static_cast<std::ptrdiff_t>(split_index);
     auto ending = objects.end();
 
     auto leftshapes = std::vector<Object*>(beginning, middling);

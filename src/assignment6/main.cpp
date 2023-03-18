@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "bvh.hpp"
 #include "global.hpp"
 #include "renderer.hpp"
 #include "scene.hpp"
@@ -16,13 +17,15 @@
 // function().
 int main() {
   try {
-    MeshTriangle bunny(std::string(ASSETS_PATH) + "models/bunny/bunny.obj");
+    // 同时选择网格内部和场景 BVH 的构建方式；改为 Naive 可对比中点划分。
+    constexpr auto split_method = BVHAccel::SplitMethod::Sah;
+    MeshTriangle bunny(std::string(ASSETS_PATH) + "models/bunny/bunny.obj", split_method);
     Scene scene(1280, 960);
 
     scene.Add(&bunny);
     scene.Add(std::make_unique<Light>(Vector3f(-20, 70, 20), Vector3f(1.0F)));
     scene.Add(std::make_unique<Light>(Vector3f(20, 70, 20), Vector3f(1.0F)));
-    scene.BuildBVH();
+    scene.BuildBVH(split_method);
 
     Renderer r;
 
