@@ -40,6 +40,12 @@
 
 使用 Whitted 风格光线追踪渲染球体与三角形网格，包含阴影、反射与折射。实现说明见 [Assignment 5](docs/assignments/assignment5/README.md)。
 
+### Assignment 6：BVH 加速光线追踪
+
+![Assignment 6：使用 BVH 查询最近交点的 Bunny 渲染结果](docs/assignments/assignment6/assignment6.png)
+
+通过包围盒求交和 BVH 遍历加速三角形网格的光线求交。实现说明见 [Assignment 6](docs/assignments/assignment6/README.md)。
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。

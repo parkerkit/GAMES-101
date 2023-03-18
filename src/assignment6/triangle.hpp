@@ -158,14 +158,17 @@ inline Bounds3 Triangle::GetBounds() { return Union(Bounds3(v0, v1), v2); }
 inline Intersection Triangle::GetIntersection(Ray ray) {
   Intersection inter;
 
+  // 保留课程框架的背面剔除：法线与光线同向时，光线从三角形背面入射。
   if (DotProduct(ray.direction, normal) > 0) {
     return inter;
   }
+  // 解 orig + t * dir = v0 + u * e1 + v * e2，顶点重心权重依次为 (1-u-v, u, v)。
   double u = 0;
   double v = 0;
-  [[maybe_unused]] double t_tmp = 0;
+  double t_tmp = 0;
   Vector3f pvec = CrossProduct(ray.direction, e2);
   double det = DotProduct(e1, pvec);
+  // 行列式接近 0 表示射线接近平行于三角形平面，或三角形退化，不继续求逆。
   if (std::abs(det) < k_epsilon) {
     return inter;
   }
@@ -178,12 +181,23 @@ inline Intersection Triangle::GetIntersection(Ray ray) {
   }
   Vector3f qvec = CrossProduct(tvec, e1);
   v = DotProduct(ray.direction, qvec) * det_inv;
+  // 三个重心权重均非负时，交点才位于三角形内部或边界上。
   if (v < 0 || u + v > 1) {
     return inter;
   }
   t_tmp = DotProduct(e2, qvec) * det_inv;
 
-  // TODO: Reject invalid t_tmp and populate happened, distance, coords, normal, obj, and m.
+  // 只接受射线正方向上、且位于有效参数区间内的交点；t 在方向归一化后才等于实际距离。
+  if (!std::isfinite(t_tmp) || t_tmp <= 0 || t_tmp < ray.t_min || t_tmp > ray.t_max) {
+    return inter;
+  }
+  // 填充后续着色所需的位置、几何法线及对象/材质引用；这些指针不转移资源所有权。
+  inter.happened = true;
+  inter.distance = t_tmp;
+  inter.coords = ray(t_tmp);
+  inter.normal = normal;
+  inter.obj = this;
+  inter.m = m;
 
   return inter;
 }
