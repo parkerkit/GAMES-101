@@ -73,11 +73,44 @@ public:
   bool IntersectP(const Ray& ray, const Vector3f& inv_dir, const std::array<int, 3>& dir_is_neg) const;
 };
 
-inline bool Bounds3::IntersectP([[maybe_unused]] const Ray& ray, [[maybe_unused]] const Vector3f& inv_dir,
-                                [[maybe_unused]] const std::array<int, 3>& dir_is_neg) const {
-  // inv_dir 为方向分量的倒数；dir_is_neg 沿用课程约定，方向分量为正时记为 1。
-  // TODO: 判断射线是否与包围盒相交，可从作业 6 迁入实现。
-  return false;
+inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& inv_dir, const std::array<int, 3>& dir_is_neg) const {
+  // dir_is_neg 沿用课程框架约定：分量为正时记为 1，为负或零时记为 0。
+  // slab 是某一坐标轴上由包围盒两侧平面夹出的区域；三个 slab 的有效 t 区间必须重叠。
+  // t_enter 取各轴进入时刻的最大值，t_exit 取离开时刻的最小值，并限制在射线有效范围内。
+  double t_enter = std::max(0.0, ray.t_min);
+  double t_exit = ray.t_max;
+  if (std::isnan(t_enter) || std::isnan(t_exit) || t_enter > t_exit) {
+    return false;
+  }
+  for (int axis = 0; axis < 3; ++axis) {
+    const float origin = ray.origin[axis];
+    const float direction = ray.direction[axis];
+    if (!std::isfinite(origin) || !std::isfinite(direction) || p_min[axis] > p_max[axis]) {
+      return false;
+    }
+    // 平行于 slab 时，该轴坐标恒定：原点在区间外则永不相交，在区间内则不限制 t。
+    // 单独处理也避免边界上的 0 * infinity 产生 NaN。
+    if (direction == 0.0F) {
+      if (origin < p_min[axis] || origin > p_max[axis]) {
+        return false;
+      }
+      continue;
+    }
+    // 优先复用方向倒数；极小的非零分量若使 float 倒数溢出，则用 double 重新计算。
+    const double inverse =
+      std::isfinite(inv_dir[axis]) ? static_cast<double>(inv_dir[axis]) : 1.0 / static_cast<double>(direction);
+    // 正向先进入 p_min 平面，负向先进入 p_max 平面，确保 near_t <= far_t。
+    const int near_side = dir_is_neg[axis] != 0 ? 0 : 1;
+    const double near_t = (static_cast<double>((*this)[near_side][axis]) - origin) * inverse;
+    const double far_t = (static_cast<double>((*this)[1 - near_side][axis]) - origin) * inverse;
+    t_enter = std::max(t_enter, near_t);
+    t_exit = std::min(t_exit, far_t);
+    // 区间不重叠即可提前退出；使用 > 而非 >=，保留相切及零厚度包围盒的交点。
+    if (t_enter > t_exit) {
+      return false;
+    }
+  }
+  return true;
 }
 
 inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2) {

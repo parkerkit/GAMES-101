@@ -35,11 +35,11 @@ inline bool SolveQuadratic(const float& a, const float& b, const float& c, float
 }
 
 inline float GetRandomFloat() {
-  std::random_device dev;
-  std::mt19937 rng(dev());
+  // 每个线程只初始化一次生成器，避免每次采样都重新获取种子并构造引擎。
+  static thread_local std::mt19937 s_rng(std::random_device{}());
   std::uniform_real_distribution<float> dist(0.0F, 1.0F);  // Uniform distribution in [0, 1).
 
-  return dist(rng);
+  return dist(s_rng);
 }
 
 inline void UpdateProgress(float progress) {

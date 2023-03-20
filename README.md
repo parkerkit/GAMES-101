@@ -47,6 +47,12 @@
 
 通过包围盒求交和 BVH 遍历加速三角形网格的光线求交。实现说明见 [Assignment 6](docs/assignments/assignment6/README.md)。
 
+### Assignment 7：路径追踪
+
+![Assignment 7：Cornell Box 路径追踪渲染结果](docs/assignments/assignment7/assignment7.png)
+
+通过面光源采样与间接光照渲染 Cornell Box，展示软阴影和墙面颜色渗透，使用 Russian Roulette 控制路径延续。实现与采样说明见 [Assignment 7](docs/assignments/assignment7/README.md)。
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。

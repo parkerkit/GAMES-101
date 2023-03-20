@@ -190,7 +190,7 @@ inline Intersection Triangle::GetIntersection(Ray ray) {
   // 解 orig + t * dir = v0 + u * e1 + v * e2，顶点重心权重依次为 (1-u-v, u, v)。
   double u = 0;
   double v = 0;
-  [[maybe_unused]] double t_tmp = 0;
+  double t_tmp = 0;
   Vector3f pvec = CrossProduct(ray.direction, e2);
   double det = DotProduct(e1, pvec);
   // 行列式接近 0 表示射线接近平行于三角形平面，或三角形退化，不继续求逆。
@@ -212,7 +212,17 @@ inline Intersection Triangle::GetIntersection(Ray ray) {
   }
   t_tmp = DotProduct(e2, qvec) * det_inv;
 
-  // TODO: 补全有效交点判断和 Intersection 信息，可从作业 6 迁入实现。
+  // 排除起点后方或射线有效区间外的交点；归一化方向时 t 才是实际距离。
+  if (!std::isfinite(t_tmp) || t_tmp <= 0.0 || t_tmp < ray.t_min || t_tmp > ray.t_max) {
+    return inter;
+  }
+  inter.happened = true;
+  inter.distance = t_tmp;
+  inter.coords = ray(t_tmp);
+  inter.normal = normal;
+  inter.obj = this;
+  inter.m = m;
+  inter.emit = m != nullptr ? m->GetEmission() : Vector3f();
 
   return inter;
 }
