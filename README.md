@@ -54,6 +54,12 @@
 
 通过面光源采样与间接光照渲染 Cornell Box，展示软阴影和墙面颜色渗透，使用 Russian Roulette 控制路径延续。实现与采样说明见 [Assignment 7](docs/assignments/assignment7/README.md)。
 
+### Assignment 8：质点弹簧绳子模拟
+
+![Assignment 8：半隐式 Euler 与 Verlet 距离约束模拟](docs/assignments/assignment8/assignment8.png)
+
+蓝色绳子使用带阻尼的半隐式 Euler，绿色绳子使用带阻尼的 Verlet 预测与距离约束修正。模型差异及交互说明见 [Assignment 8](docs/assignments/assignment8/README.md)。
+
 ## 构建与运行
 
 需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。CGL、GLFW、GLEW 和 FreeType 随仓库源码构建。

@@ -25,12 +25,13 @@ void Application::init() {
   glLineWidth(4.0F);
   glColor3f(1.0F, 1.0F, 1.0F);
 
-  // Keep the course framework's endpoints, node count and pinned-node selection.
+  // 按作业要求增加节点数量，便于观察两种模拟方式的运动差异。
+  constexpr int num_nodes = 16;
   const std::vector<int> pinned_nodes{0};
-  m_rope_euler = std::make_unique<Rope>(CGL::Vector2D(0, 200), CGL::Vector2D(-400, 200), 3, m_config.mass, m_config.ks,
-                                        pinned_nodes);
-  m_rope_verlet = std::make_unique<Rope>(CGL::Vector2D(0, 200), CGL::Vector2D(-400, 200), 3, m_config.mass, m_config.ks,
-                                         pinned_nodes);
+  m_rope_euler = std::make_unique<Rope>(CGL::Vector2D(0, 200), CGL::Vector2D(-400, 200), num_nodes, m_config.mass,
+                                        m_config.ks, pinned_nodes);
+  m_rope_verlet = std::make_unique<Rope>(CGL::Vector2D(0, 200), CGL::Vector2D(-400, 200), num_nodes, m_config.mass,
+                                         m_config.ks, pinned_nodes);
 }
 
 void Application::render() {

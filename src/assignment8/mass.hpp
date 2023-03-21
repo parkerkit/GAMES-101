@@ -18,6 +18,7 @@ struct Mass {
   CGL::Vector2D position;
   // Explicit Verlet integration.
   CGL::Vector2D last_position;
+  double last_position_time_step = 0.0;
   // Explicit Euler integration.
   CGL::Vector2D velocity;
   CGL::Vector2D forces;
