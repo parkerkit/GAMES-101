@@ -14,6 +14,7 @@
 | Assignment 5 | 光线追踪 | [说明](docs/assignments/assignment5/README.md) · [作业要求](docs/assignments/assignment5/assignment5.pdf) |
 | Assignment 6 | BVH 加速光线追踪 | [说明](docs/assignments/assignment6/README.md) · [作业要求](docs/assignments/assignment6/PA6.pdf) |
 | Assignment 7 | 路径追踪 | [说明](docs/assignments/assignment7/README.md) · [作业要求](docs/assignments/assignment7/Assignment7.pdf) |
+| Assignment 8 | 质点弹簧绳子模拟 | [说明](docs/assignments/assignment8/README.md) · [作业要求](docs/assignments/assignment8/assignment8.pdf) |
 
 ## 效果展示
 
@@ -55,7 +56,7 @@
 
 ## 构建与运行
 
-需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。
+需要 CMake 3.25+、Ninja、支持 C++20 的编译器、OpenCV 和 Eigen。目前提供 Windows（MSVC x64）构建说明，其他平台尚未验证。CGL、GLFW、GLEW 和 FreeType 随仓库源码构建。
 
 依赖安装、本地配置、构建运行及 DLL 处理见 [Windows 构建指南](docs/BUILD.md)。本地依赖路径保存在不提交的 `CMakeUserPresets.json` 中，配置示例见该指南。
 
@@ -65,7 +66,7 @@
 src/                             各作业源码及独立 CMake target
 cmake/                           公共构建选项
 assets/                          模型、纹理及来源记录
-third_party/                     第三方 OBJ 加载器及来源记录
+third_party/                     第三方库及来源记录
 docs/BUILD.md                    Windows 构建与运行说明
 docs/assignments/                各作业说明与材料
 hooks/                           本地开发检查脚本
@@ -73,6 +74,6 @@ hooks/                           本地开发检查脚本
 
 ## 来源与许可
 
-课程及作业材料来自 [GAMES101](https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html)，模型与纹理来源见 [资源说明](assets/README.md)，OBJ 加载器来源见 [说明](third_party/obj_loader/README.md)。
+课程及作业材料来自 [GAMES101](https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html)，模型与纹理来源见 [资源说明](assets/README.md)，第三方库来源及本地适配见 [第三方库说明](third_party/README.md)。
 
 本仓库原创代码使用 [MIT License](LICENSE)。课程材料、课程框架及第三方资源保留各自的许可与署名，不适用本仓库原创代码的许可声明。
